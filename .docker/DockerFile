@@ -1,0 +1,33 @@
+# Estágio 1: Build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+
+# Copia a solução e os arquivos de projeto primeiro para aproveitar o cache do Docker na restauração.
+COPY *.sln .
+COPY ProductCatalog.API/*.csproj ProductCatalog.API/
+COPY ProductCatalog.Application/*.csproj ProductCatalog.Application/
+COPY ProductCatalog.Domain/*.csproj ProductCatalog.Domain/
+COPY ProductCatalog.Infrastructure/*.csproj ProductCatalog.Infrastructure/
+
+RUN dotnet restore
+
+# Copia o restante do código-fonte
+COPY . .
+
+WORKDIR /src/ProductCatalog.API
+
+# Publica o aplicativo (Release, sem apphost para manter a imagem pequena)
+RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
+
+# Estágio 2: Runtime
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+WORKDIR /app
+
+# Permite que o ASP.NET Core escute na porta 8080 dentro do contêiner
+ENV ASPNETCORE_URLS=http://+:8080
+EXPOSE 8080
+
+# Copia a saída publicada do estágio de build
+COPY --from=build /app/publish .
+
+ENTRYPOINT ["dotnet", "ProductCatalog.API.dll"]

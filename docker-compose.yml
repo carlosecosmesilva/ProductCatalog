@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  productcatalog-api:
+    build:
+      version: '3.8'
+
+      secrets:
+        db_password:
+          file: ./secrets/db_password.txt
+
+      services:
+        productcatalog-api:
+          build:
+            context: .
+            dockerfile: .docker/DockerFile
+          ports:
+            - "8080:8080"
+          depends_on:
+            - sqlserver
+            - redis
+          secrets:
+            - db_password
+          environment:
+            - ASPNETCORE_ENVIRONMENT=Development
+            - ASPNETCORE_URLS=http://+:8080
+            # DB host/user/database provided via env; password available in /run/secrets/db_password inside the container
+            - SQL_SERVER__HOST=sqlserver
+            - SQL_SERVER__DATABASE=ProductCatalogDb
+            - SQL_SERVER__USER=sa
+            - Redis__Configuration=redis:6379
+
+        sqlserver:
+          image: mcr.microsoft.com/mssql/server:2022-latest
+          secrets:
+            - db_password
+          environment:
+            ACCEPT_EULA: "Y"
+          ports:
+            - "1433:1433"
+          volumes:
+            - mssql-data:/var/opt/mssql
+          command: ["/bin/bash", "-c", "export SA_PASSWORD=$(cat /run/secrets/db_password) && /opt/mssql/bin/sqlservr"]
+          healthcheck:
+            test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P \"$(cat /run/secrets/db_password)\" -Q \"SELECT 1\" >/dev/null 2>&1"]
+            interval: 10s
+            timeout: 5s
+            retries: 10
+
+        redis:
+          image: redis:7-alpine
+          ports:
+            - "6379:6379"
+          volumes:
+            - redis-data:/data
+
+      volumes:
+        mssql-data:
+        redis-data:
