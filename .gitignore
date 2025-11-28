@@ -1,0 +1,63 @@
+# .gitignore for a .NET / Visual Studio project
+
+# Visual Studio temporary files, build results, and
+# user-specific files
+.vs/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build directories
+**/[Bb]in/
+**/[Oo]bj/
+
+# NuGet packages
+packages/
+*.nupkg
+
+# Rider/JetBrains
+.idea/
+*.iml
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# Test results and coverage
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+# User secrets and local configuration
+secrets.json
+appsettings.*.Development.json
+.env
+.env.*
+
+# Database files
+*.mdf
+*.ldf
+
+# Entity Framework Core
+*.efcore
+
+# Docker
+docker-compose.override.yml
+
+# Publish artifacts
+publish/
+
+# Ignore generated package files
+project.lock.json
+project.fragment.lock.json
+
+# Misc
+*.log
