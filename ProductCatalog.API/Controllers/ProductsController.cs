@@ -8,8 +8,11 @@ namespace ProductCatalog.API.Controllers
     [Route("api/[controller]")]
     public class ProductsController(IProductService productService) : ControllerBase
     {
+        #region Variables
         private readonly IProductService _productService = productService;
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Lista todos os produtos, com opções de busca e ordenação.
         /// </summary>
@@ -53,11 +56,11 @@ namespace ProductCatalog.API.Controllers
         /// <returns>Retorna o produto criado.</returns>
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)] // Para erros de validação (Valor negativo)
+        [ProducesResponseType(StatusCodes.Status400BadRequest)] // Para erros de validação (Por exemplo, Valor negativo)
         public async Task<ActionResult<ProductResponseDTO>> Post([FromBody] ProductCreateUpdateDTO produtoDto)
         {
-            // O FluentValidation já interceptou o modelo.
-            // Se o modelo for inválido (Valor < 0), o pipeline retorna 400 antes de chegar aqui.
+            // O FluentValidation já intercepta o modelo.
+            // Ou seja se o modelo for inválido (Valor < 0), o pipeline retorna 400 antes de chegar aqui.
 
             var novoProduto = await _productService.AddAsync(produtoDto);
 
@@ -107,5 +110,6 @@ namespace ProductCatalog.API.Controllers
                 return NotFound($"Produto com ID {id} não encontrado.");
             }
         }
+        #endregion
     }
 }
