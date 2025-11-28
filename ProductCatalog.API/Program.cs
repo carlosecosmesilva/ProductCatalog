@@ -3,13 +3,29 @@ using Microsoft.EntityFrameworkCore;
 using ProductCatalog.Application;
 using ProductCatalog.Infrastructure;
 using ProductCatalog.Infrastructure.Data;
+using System.IO;
+using System.Collections.Generic;
+using System.Linq;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- 0. CONFIGURAÇÃO DO SERVIÇO DE BANCO DE DADOS ---
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
+// --- 0. CONFIGURAÇÃO DO SERVIÇO DE BANCO DE DADOS (LEITURA DE SECRET) ---
+// Se um secret Docker for montado em /run/secrets/db_password, compomos a connection string em memória
+var inMemoryConfig = new Dictionary<string, string>();
+var secretPath = "/run/secrets/db_password";
+if (File.Exists(secretPath))
+{
+    var dbPassword = File.ReadAllText(secretPath).Trim();
+    var host = builder.Configuration["SQL_SERVER__HOST"] ?? "sqlserver";
+    var db = builder.Configuration["SQL_SERVER__DATABASE"] ?? "ProductCatalogDb";
+    var user = builder.Configuration["SQL_SERVER__USER"] ?? "sa";
+    inMemoryConfig["ConnectionStrings:DefaultConnection"] =
+        $"Server={host},1433;Database={db};User Id={user};Password={dbPassword};TrustServerCertificate=True;";
+}
+
+// Injeta a configuração em memória (vai sobrescrever appsettings / env vars se presentes)
+var inMemoryForConfig = inMemoryConfig.Select(kv => new KeyValuePair<string, string?>(kv.Key, kv.Value));
+builder.Configuration.AddInMemoryCollection(inMemoryForConfig);
 
 
 // --- 1. CONFIGURAÇÃO DA INJEÇÃO DE DEPENDÊNCIA (DI) ---
@@ -21,12 +37,12 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
 // Configuração do FluentValidation para interceptar modelos antes da action
-builder.Services.AddControllers()
-    .AddFluentValidation(fv =>
-    {
-        fv.DisableDataAnnotationsValidation = true;
-        fv.AutomaticValidationEnabled = true;
-    });
+builder.Services.AddControllers();
+builder.Services.AddFluentValidationAutoValidation(options =>
+{
+    options.DisableDataAnnotationsValidation = true;
+});
+builder.Services.AddFluentValidationClientsideAdapters();
 
 
 // --- 2. CONFIGURAÇÕES ADICIONAIS ---
