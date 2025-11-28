@@ -61,3 +61,6 @@ project.fragment.lock.json
 
 # Misc
 *.log
+
+# Ignore Secrets folder
+secrets/
